@@ -1,14 +1,19 @@
 package main
 
-type RedoStack[T any] struct {
-	items []T
+import "github.com/hajimehoshi/ebiten/v2"
+
+// stack structure for keeping track of image states for undo / redo
+type StateStack struct {
+	items []*ebiten.Image
 
 	// always +1 than the actual index (ie, this == 1 when theres 1 item, so the real index is 0)
 	// this tracks our position
 	idx int
 }
 
-func (u *RedoStack[T]) Push(item T) {
+// pushes and item to the redo stack, only increments the index counter if passed `incrementIdx` is true
+// leave `incrementIdx` false in order to push an un-poppable stack (ie, only redo-able)
+func (u *StateStack) Push(item *ebiten.Image) {
 	// if the idx is not the same as the length, it means some items have been popped
 	// shrink the list to the current index and append.
 	if u.idx != len(u.items) {
@@ -20,22 +25,22 @@ func (u *RedoStack[T]) Push(item T) {
 }
 
 // pops an item from the stack, returning it and a bool for whether or not an item was returned
-func (u *RedoStack[T]) Pop() (T, bool) {
+func (u *StateStack) Pop() (*ebiten.Image, bool) {
 	u.idx--
 	if u.idx < 0 {
 		u.idx = 0
-		return *new(T), false
+		return nil, false
 	} else {
 		return u.items[u.idx], true
 	}
 }
 
 // Redo an action, re-applies the last `Pop` and returns it and a bool indicating if it could be redone
-func (u *RedoStack[T]) Redo() (T, bool) {
-	if u.idx < len(u.items) {
-		val := u.items[u.idx]
+func (u *StateStack) Redo() (*ebiten.Image, bool) {
+	if u.idx+1 < len(u.items) {
 		u.idx++
+		val := u.items[u.idx]
 		return val, true
 	}
-	return *new(T), false
+	return nil, false
 }
