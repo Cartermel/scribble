@@ -1,10 +1,15 @@
 package main
 
-import "github.com/hajimehoshi/ebiten/v2"
+import (
+	"fmt"
+
+	"github.com/hajimehoshi/ebiten/v2"
+)
 
 // stack structure for keeping track of image states for undo / redo
 type StateStack struct {
-	items []*ebiten.Image
+	items           []*ebiten.Image
+	futuremostState *ebiten.Image
 
 	// always +1 than the actual index (ie, this == 1 when theres 1 item, so the real index is 0)
 	// this tracks our position
@@ -25,7 +30,13 @@ func (u *StateStack) Push(item *ebiten.Image) {
 }
 
 // pops an item from the stack, returning it and a bool for whether or not an item was returned
-func (u *StateStack) Pop() (*ebiten.Image, bool) {
+// must pass the current state at time of undo-ing, for future re-dos
+func (u *StateStack) Undo(currentState *ebiten.Image) (*ebiten.Image, bool) {
+	// if we're undoing from the very top, push without incrementing the index
+	if u.idx == len(u.items) {
+		u.items = append(u.items, currentState)
+	}
+
 	u.idx--
 	if u.idx < 0 {
 		u.idx = 0
@@ -41,6 +52,10 @@ func (u *StateStack) Redo() (*ebiten.Image, bool) {
 		u.idx++
 		val := u.items[u.idx]
 		return val, true
+	} else if u.futuremostState != nil {
+		fmt.Println(u.idx, len(u.items))
+		return u.futuremostState, true
 	}
+
 	return nil, false
 }

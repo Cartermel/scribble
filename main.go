@@ -35,7 +35,6 @@ func NewGame() *Game {
 	}
 	g.mainCanvas.Fill(color.Black)
 	g.stateStack = &StateStack{}
-	g.stateStack.Push(ebiten.NewImageFromImage(g.mainCanvas))
 
 	// sync updates with fps, since we dont really do cmoplex logic in the update
 	// and we need smooth drawing (mouse updates are calculated from TPS)
@@ -69,12 +68,9 @@ func (g *Game) Update() error {
 	// 	ebiten.SetCursorShape(ebiten.CursorShapeDefault)
 	// }
 
-	if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
-		g.stateStack.Push(ebiten.NewImageFromImage(g.mainCanvas))
-	}
-
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		// push previous state just before drawing a new line
+		g.stateStack.Push(ebiten.NewImageFromImage(g.mainCanvas))
 		g.previousX, g.previousY = CursorPositionF()
 	}
 
@@ -90,7 +86,7 @@ func (g *Game) Update() error {
 		}
 	} else if ebiten.IsKeyPressed(ebiten.KeyControl) && inpututil.IsKeyJustPressed(ebiten.KeyZ) {
 		// push current state before undoing, with false as a param so it doesnt instantly get poppeds
-		if lastState, ok := g.stateStack.Pop(); ok {
+		if lastState, ok := g.stateStack.Undo(g.mainCanvas); ok {
 			g.mainCanvas = lastState
 		}
 	}
