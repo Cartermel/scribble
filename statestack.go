@@ -22,7 +22,7 @@ func (u *StateStack) Push(item *ebiten.Image) {
 	// if the idx is not the same as the length, it means some items have been popped
 	// shrink the list to the current index and append.
 	if u.idx != len(u.items) {
-		u.items = u.items[0:u.idx] // TODO: plus 1?
+		u.items = u.items[0:u.idx]
 	}
 
 	u.items = append(u.items, item)
