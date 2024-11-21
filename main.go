@@ -6,6 +6,7 @@ import (
 	"image"
 	"image/color"
 	"log"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -36,12 +37,15 @@ type Game struct {
 	canvasOffset    image.Point // to apply after delta has been applied
 
 	isDrawing bool
+
+	lastTickTime time.Time
 }
 
 func NewGame() *Game {
 	g := &Game{
-		mainCanvas: ebiten.NewImage(CANVAS_SQ_SUZE, CANVAS_SQ_SUZE),
-		brushColor: color.White,
+		mainCanvas:   ebiten.NewImage(CANVAS_SQ_SUZE, CANVAS_SQ_SUZE),
+		brushColor:   color.White,
+		lastTickTime: time.Now(),
 	}
 	g.mainCanvas.Fill(color.Black)
 	g.stateStack = &StateStack{}
@@ -68,16 +72,21 @@ func (g *Game) handleMouseWheel() {
 	}
 }
 
+// retrieves the time since last tick, which is also set here.
+// intended to be called from Update()
+func (g *Game) DeltaTime() time.Duration {
+	deltaTime := time.Since(g.lastTickTime)
+	g.lastTickTime = time.Now()
+	return deltaTime
+}
+
 func (g *Game) Update() error {
 	g.handleMouseWheel()
-	pressedKeys := inpututil.AppendPressedKeys(nil)
-	undoPressed := KeysEqual(pressedKeys, KeybindUndo)
-	movePressed := KeysEqual(pressedKeys, KeybindDrag)
-	keybindsPressed := undoPressed || movePressed // todo: better way of doing this.
-	keybindsPressed = keybindsPressed && !g.isDrawing
+	pressedKeybind := HandleKeyBindRead()
+	anyKeybindsPressed := pressedKeybind != KeybindNone && !g.isDrawing
 
 	// if no keybinds are being pressed, proceed with drawing logic
-	if !keybindsPressed {
+	if !anyKeybindsPressed {
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 			// push previous state just before drawing a new line
 			g.stateStack.Push(ebiten.NewImageFromImage(g.mainCanvas))
@@ -119,11 +128,11 @@ func (g *Game) Update() error {
 	}
 
 	// redo and undo handling, check redo first, then undo. can only do one per update
-	if ebiten.IsKeyPressed(ebiten.KeyControl) && ebiten.IsKeyPressed(ebiten.KeyShift) && inpututil.IsKeyJustPressed(ebiten.KeyZ) {
+	if pressedKeybind == KeybindRedo && inpututil.IsKeyJustPressed(ebiten.KeyZ) {
 		if redoState, ok := g.stateStack.Redo(); ok {
 			g.mainCanvas = redoState
 		}
-	} else if ebiten.IsKeyPressed(ebiten.KeyControl) && inpututil.IsKeyJustPressed(ebiten.KeyZ) {
+	} else if pressedKeybind == KeybindUndo && inpututil.IsKeyJustPressed(ebiten.KeyZ) {
 		// push current state before undoing, with false as a param so it doesnt instantly get poppeds
 		if lastState, ok := g.stateStack.Undo(g.mainCanvas); ok {
 			g.mainCanvas = lastState
