@@ -12,7 +12,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-const DEBUG = true
+const DEBUG = false // TODO: compile flag for this
 const CANVAS_SQ_SUZE = 2000
 
 var (
@@ -103,9 +103,9 @@ func (g *Game) Update() error {
 		return nil
 	}
 
-	// -------------------------------------------------
-	// --------- NON "DRAWING" MODE CODE BELOW ---------
-	// -------------------------------------------------
+	// ------------------------------------------------- //
+	// --------- NON "DRAWING" MODE CODE BELOW --------- //
+	// ------------------------------------------------- //
 
 	if ebiten.IsKeyPressed(ebiten.KeySpace) {
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
