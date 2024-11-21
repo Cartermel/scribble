@@ -5,21 +5,16 @@ package scribble
 import (
 	"image"
 	"image/color"
-	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 var (
-	whiteImage    = ebiten.NewImage(3, 3)
-	whiteSubImage = whiteImage.SubImage(image.Rect(1, 1, 2, 2)).(*ebiten.Image)
-)
-
-var (
+	whiteImage     = ebiten.NewImage(3, 3)
+	whiteSubImage  = whiteImage.SubImage(image.Rect(1, 1, 2, 2)).(*ebiten.Image)
 	cachedVertices []ebiten.Vertex
 	cachedIndices  []uint16
-	cacheM         sync.Mutex
 )
 
 func init() {
@@ -32,12 +27,6 @@ func init() {
 	whiteImage.WritePixels(pix)
 }
 
-func useCachedVerticesAndIndices(fn func([]ebiten.Vertex, []uint16) (vs []ebiten.Vertex, is []uint16)) {
-	cacheM.Lock()
-	defer cacheM.Unlock()
-	cachedVertices, cachedIndices = fn(cachedVertices[:0], cachedIndices[:0])
-}
-
 // StrokeLine strokes a line (x0, y0)-(x1, y1) with the specified width and color.
 // clr has be to be a solid (non-transparent) color.
 func StrokeLine(dst *ebiten.Image, x0, y0, x1, y1 float32, strokeWidth float32, clr color.Color, antialias bool) {
@@ -48,11 +37,8 @@ func StrokeLine(dst *ebiten.Image, x0, y0, x1, y1 float32, strokeWidth float32, 
 	strokeOp.Width = strokeWidth
 	strokeOp.LineCap = vector.LineCapRound
 
-	useCachedVerticesAndIndices(func(vs []ebiten.Vertex, is []uint16) ([]ebiten.Vertex, []uint16) {
-		vs, is = path.AppendVerticesAndIndicesForStroke(vs, is, strokeOp)
-		drawVerticesForUtil(dst, vs, is, clr, antialias)
-		return vs, is
-	})
+	cachedVertices, cachedIndices = path.AppendVerticesAndIndicesForStroke(cachedVertices[:0], cachedIndices[:0], strokeOp)
+	drawVerticesForUtil(dst, cachedVertices, cachedIndices, clr, antialias)
 }
 
 func drawVerticesForUtil(dst *ebiten.Image, vs []ebiten.Vertex, is []uint16, clr color.Color, antialias bool) {
