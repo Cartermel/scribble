@@ -1,15 +1,15 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // stack structure for keeping track of image states for undo / redo
 type StateStack struct {
-	items           []*ebiten.Image
-	futuremostState *ebiten.Image
+	// state is simply a slice of images, i was worried about the possible memory usage of this
+	// but I spammed it in testing and it barely went up 2mb for 100 state layers, so should be fine for any modern pc
+	// TODO: limit to like 1000 or some number?
+	items []*ebiten.Image
 
 	// always +1 than the actual index (ie, this == 1 when theres 1 item, so the real index is 0)
 	// this tracks our position
@@ -52,9 +52,6 @@ func (u *StateStack) Redo() (*ebiten.Image, bool) {
 		u.idx++
 		val := u.items[u.idx]
 		return val, true
-	} else if u.futuremostState != nil {
-		fmt.Println(u.idx, len(u.items))
-		return u.futuremostState, true
 	}
 
 	return nil, false
