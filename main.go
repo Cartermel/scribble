@@ -28,11 +28,18 @@ type Game struct {
 	mainCanvas           *ebiten.Image
 
 	stateStack *StateStack
+
+	brushColor color.Color
+
+	mouseDragAnchor image.Point
+	mouseDragDelta  image.Point // for use WHILE dragging
+	canvasOffset    image.Point // to apply after delta has been applied
 }
 
 func NewGame() *Game {
 	g := &Game{
 		mainCanvas: ebiten.NewImage(CANVAS_SQ_SUZE, CANVAS_SQ_SUZE),
+		brushColor: color.White,
 	}
 	g.mainCanvas.Fill(color.Black)
 	g.stateStack = &StateStack{}
@@ -58,10 +65,6 @@ func (g *Game) handleMouseWheel() {
 	}
 }
 
-var mouseDragAnchor = image.Point{}
-var mouseDragDelta = image.Point{} // for use WHILE dragging
-var canvasOffset = image.Point{}   // to apply after delta has been applied
-
 func (g *Game) Update() error {
 	g.handleMouseWheel()
 	ebiten.SetCursorMode(ebiten.CursorModeHidden)
@@ -70,21 +73,21 @@ func (g *Game) Update() error {
 		ebiten.SetCursorShape(ebiten.CursorShapeMove)
 
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-			mouseDragAnchor = image.Pt(ebiten.CursorPosition())
-			mouseDragDelta = image.Pt(0, 0)
+			g.mouseDragAnchor = image.Pt(ebiten.CursorPosition())
+			g.mouseDragDelta = image.Pt(0, 0)
 		}
 
 		// on drag end, TODO: what if the user lets go of space??? or some other combination where this doest get called...
 		if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
-			canvasOffset = canvasOffset.Add(mouseDragDelta)
-			mouseDragDelta = image.Pt(0, 0)
+			g.canvasOffset = g.canvasOffset.Add(g.mouseDragDelta)
+			g.mouseDragDelta = image.Pt(0, 0)
 		}
 
 		// space, and mouse pressed
 		if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 			x, y := ebiten.CursorPosition()
-			mouseDragDelta.X = mouseDragAnchor.X - x
-			mouseDragDelta.Y = mouseDragAnchor.Y - y
+			g.mouseDragDelta.X = g.mouseDragAnchor.X - x
+			g.mouseDragDelta.Y = g.mouseDragAnchor.Y - y
 		}
 	} else {
 		ebiten.SetCursorShape(ebiten.CursorShapeDefault)
@@ -117,7 +120,7 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	offset := canvasOffset.Add(mouseDragDelta)
+	offset := g.canvasOffset.Add(g.mouseDragDelta)
 
 	x, y := g.cursorPositionF()
 
@@ -130,7 +133,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 				x+float32(offset.X),
 				y+float32(offset.Y),
 				BRUSH_SIZE/2,
-				color.White,
+				g.brushColor,
 				true,
 			)
 		} else {
@@ -141,7 +144,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 				x+float32(offset.X),
 				y+float32(offset.Y),
 				BRUSH_SIZE,
-				color.White,
+				g.brushColor,
 				true,
 			)
 		}
@@ -156,6 +159,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	})
 
 	// cursor
+	vector.StrokeCircle(screen, x, y, BRUSH_SIZE/2+1, 3, color.Black, true)
 	vector.StrokeCircle(screen, x, y, BRUSH_SIZE/2+1, 2, color.White, true)
 
 	if DEBUG {
@@ -174,7 +178,7 @@ func debug(screen *ebiten.Image) {
 
 func main() {
 	ebiten.SetWindowSize(1280, 720)
-	ebiten.SetWindowTitle("Paint (Ebitengine Demo)")
+	ebiten.SetWindowTitle("Paint")
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	if err := ebiten.RunGame(NewGame()); err != nil {
 		log.Fatal(err)
