@@ -3,6 +3,7 @@ package main
 import (
 	"cartermel/bruh/bruh"
 	"fmt"
+	"image"
 	"image/color"
 	"log"
 
@@ -42,7 +43,7 @@ func NewGame() *Game {
 	return g
 }
 
-func CursorPositionF() (float32, float32) {
+func (g *Game) cursorPositionF() (float32, float32) {
 	x, y := ebiten.CursorPosition()
 	return float32(x), float32(y)
 }
@@ -57,21 +58,42 @@ func (g *Game) handleMouseWheel() {
 	}
 }
 
+var mouseDragAnchor = image.Point{}
+var mouseDragDelta = image.Point{} // for use WHILE dragging
+var canvasOffset = image.Point{}   // to apply after delta has been applied
+
 func (g *Game) Update() error {
 	g.handleMouseWheel()
 	ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
-	// TODO: grabbing and moving canvas idk
-	// if ebiten.IsKeyPressed(ebiten.KeySpace) {
-	// 	ebiten.SetCursorShape(ebiten.CursorShapeMove)
-	// } else {
-	// 	ebiten.SetCursorShape(ebiten.CursorShapeDefault)
-	// }
+	if ebiten.IsKeyPressed(ebiten.KeySpace) {
+		ebiten.SetCursorShape(ebiten.CursorShapeMove)
+
+		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+			mouseDragAnchor = image.Pt(ebiten.CursorPosition())
+			mouseDragDelta = image.Pt(0, 0)
+		}
+
+		// on drag end, TODO: what if the user lets go of space??? or some other combination where this doest get called...
+		if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
+			canvasOffset = canvasOffset.Add(mouseDragDelta)
+			mouseDragDelta = image.Pt(0, 0)
+		}
+
+		// space, and mouse pressed
+		if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+			x, y := ebiten.CursorPosition()
+			mouseDragDelta.X = mouseDragAnchor.X - x
+			mouseDragDelta.Y = mouseDragAnchor.Y - y
+		}
+	} else {
+		ebiten.SetCursorShape(ebiten.CursorShapeDefault)
+	}
 
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		// push previous state just before drawing a new line
 		g.stateStack.Push(ebiten.NewImageFromImage(g.mainCanvas))
-		g.previousX, g.previousY = CursorPositionF()
+		g.previousX, g.previousY = g.cursorPositionF()
 	}
 
 	// all below processing cannot be done if the mouse button is pressed (drawing)
@@ -95,20 +117,43 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	x, y := CursorPositionF()
+	offset := canvasOffset.Add(mouseDragDelta)
+
+	x, y := g.cursorPositionF()
 
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-		sameJoint := x == g.previousX && y == g.previousY
-		if sameJoint {
-			vector.StrokeCircle(g.mainCanvas, x, y, 1, BRUSH_SIZE-2, color.White, true)
+		// check if the cursor moved or not
+		stationaryTick := x == g.previousX && y == g.previousY
+		if stationaryTick {
+			vector.DrawFilledCircle(
+				g.mainCanvas,
+				x+float32(offset.X),
+				y+float32(offset.Y),
+				BRUSH_SIZE/2,
+				color.White,
+				true,
+			)
 		} else {
-			bruh.StrokeLine(g.mainCanvas, g.previousX, g.previousY, x, y, BRUSH_SIZE, color.White, true)
+			bruh.StrokeLine(
+				g.mainCanvas,
+				g.previousX+float32(offset.X),
+				g.previousY+float32(offset.Y),
+				x+float32(offset.X),
+				y+float32(offset.Y),
+				BRUSH_SIZE,
+				color.White,
+				true,
+			)
 		}
 
-		g.previousX, g.previousY = CursorPositionF()
+		g.previousX, g.previousY = g.cursorPositionF()
 	}
 
-	screen.DrawImage(g.mainCanvas, nil)
+	geo := ebiten.GeoM{}
+	geo.Translate(-float64(offset.X), -float64(offset.Y))
+	screen.DrawImage(g.mainCanvas, &ebiten.DrawImageOptions{
+		GeoM: geo,
+	})
 
 	// cursor
 	vector.StrokeCircle(screen, x, y, BRUSH_SIZE/2+1, 2, color.White, true)
