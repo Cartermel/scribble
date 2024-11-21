@@ -1,4 +1,4 @@
-package main
+package scribble
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"

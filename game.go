@@ -1,11 +1,9 @@
-package main
+package scribble
 
 import (
-	"cartermel/bruh/bruh"
 	"fmt"
 	"image"
 	"image/color"
-	"log"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -163,7 +161,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 				true,
 			)
 		} else {
-			bruh.StrokeLine(
+			StrokeLine(
 				g.mainCanvas,
 				g.previousX+float32(offset.X),
 				g.previousY+float32(offset.Y),
@@ -211,13 +209,4 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 func debug(screen *ebiten.Image) {
 	msg := fmt.Sprintf("TPS: %0.2f\nFPS: %0.2f", ebiten.ActualTPS(), ebiten.ActualFPS())
 	ebitenutil.DebugPrint(screen, msg)
-}
-
-func main() {
-	ebiten.SetWindowSize(1280, 720)
-	ebiten.SetWindowTitle("paint")
-	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
-	if err := ebiten.RunGame(NewGame()); err != nil {
-		log.Fatal(err)
-	}
 }

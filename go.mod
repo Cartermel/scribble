@@ -1,4 +1,4 @@
-module cartermel/bruh
+module cartermel/scribble
 
 go 1.23.3
 

@@ -1,8 +1,7 @@
-// TODO: clean this up, cloned straight from vector.StrokeLine() or whatever
-// just so i could set the options for the stroke which they dont expose...
+package scribble
 
-package bruh
-
+// contents basically cloned from ebiten's vector package
+// but only the StrokeLine parts, because their api doesnt let us set options
 import (
 	"image"
 	"image/color"
