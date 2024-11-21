@@ -39,6 +39,8 @@ type Game struct {
 	isDrawing bool
 
 	lastTickTime time.Time
+
+	hasInitialized bool
 }
 
 func NewGame() *Game {
@@ -192,6 +194,17 @@ func (g *Game) Draw(screen *ebiten.Image) {
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
+	// run init logic, center canvas etc
+	if !g.hasInitialized {
+		g.hasInitialized = true
+
+		// center the canvas in the screen
+		centerCanvas := g.mainCanvas.Bounds().Max.Div(2)
+		centerScreen := image.Pt(outsideWidth/2, outsideHeight/2)
+		diff := centerCanvas.Sub(centerScreen)
+		g.canvasOffset = g.canvasOffset.Add(diff)
+	}
+
 	return outsideWidth, outsideHeight
 }
 
