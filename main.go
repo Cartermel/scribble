@@ -34,6 +34,8 @@ type Game struct {
 	mouseDragAnchor image.Point
 	mouseDragDelta  image.Point // for use WHILE dragging
 	canvasOffset    image.Point // to apply after delta has been applied
+
+	isDrawing bool
 }
 
 func NewGame() *Game {
@@ -47,6 +49,7 @@ func NewGame() *Game {
 	// sync updates with fps, since we dont really do cmoplex logic in the update
 	// and we need smooth drawing (mouse updates are calculated from TPS)
 	ebiten.SetTPS(ebiten.SyncWithFPS)
+	ebiten.SetCursorMode(ebiten.CursorModeHidden)
 	return g
 }
 
@@ -67,11 +70,35 @@ func (g *Game) handleMouseWheel() {
 
 func (g *Game) Update() error {
 	g.handleMouseWheel()
-	ebiten.SetCursorMode(ebiten.CursorModeHidden)
+	pressedKeys := inpututil.AppendPressedKeys(nil)
+	undoPressed := KeysEqual(pressedKeys, KeybindUndo)
+	movePressed := KeysEqual(pressedKeys, KeybindDrag)
+	keybindsPressed := undoPressed || movePressed // todo: better way of doing this.
+	keybindsPressed = keybindsPressed && !g.isDrawing
+
+	// if no keybinds are being pressed, proceed with drawing logic
+	if !keybindsPressed {
+		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+			// push previous state just before drawing a new line
+			g.stateStack.Push(ebiten.NewImageFromImage(g.mainCanvas))
+			g.previousX, g.previousY = g.cursorPositionF()
+		}
+
+		// if we're currently drawing, refresh the drawing state and return
+		// otherwise give a tick to the below keyboard handlers
+		// set drawing state, any code below this point cannot run if drawing
+		g.isDrawing = ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
+	}
+
+	if g.isDrawing {
+		return nil
+	}
+
+	// -------------------------------------------------
+	// --------- NON "DRAWING" MODE CODE BELOW ---------
+	// -------------------------------------------------
 
 	if ebiten.IsKeyPressed(ebiten.KeySpace) {
-		ebiten.SetCursorShape(ebiten.CursorShapeMove)
-
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 			g.mouseDragAnchor = image.Pt(ebiten.CursorPosition())
 			g.mouseDragDelta = image.Pt(0, 0)
@@ -89,19 +116,6 @@ func (g *Game) Update() error {
 			g.mouseDragDelta.X = g.mouseDragAnchor.X - x
 			g.mouseDragDelta.Y = g.mouseDragAnchor.Y - y
 		}
-	} else {
-		ebiten.SetCursorShape(ebiten.CursorShapeDefault)
-	}
-
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		// push previous state just before drawing a new line
-		g.stateStack.Push(ebiten.NewImageFromImage(g.mainCanvas))
-		g.previousX, g.previousY = g.cursorPositionF()
-	}
-
-	// all below processing cannot be done if the mouse button is pressed (drawing)
-	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-		return nil
 	}
 
 	// redo and undo handling, check redo first, then undo. can only do one per update
@@ -120,11 +134,12 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
+	screen.Fill(color.RGBA{20, 20, 20, 255})
 	offset := g.canvasOffset.Add(g.mouseDragDelta)
 
 	x, y := g.cursorPositionF()
 
-	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+	if g.isDrawing {
 		// check if the cursor moved or not
 		stationaryTick := x == g.previousX && y == g.previousY
 		if stationaryTick {
@@ -178,7 +193,7 @@ func debug(screen *ebiten.Image) {
 
 func main() {
 	ebiten.SetWindowSize(1280, 720)
-	ebiten.SetWindowTitle("Paint")
+	ebiten.SetWindowTitle("paint")
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	if err := ebiten.RunGame(NewGame()); err != nil {
 		log.Fatal(err)
