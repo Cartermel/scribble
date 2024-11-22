@@ -12,11 +12,9 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-const DEBUG = false // TODO: compile flag for this
-const CANVAS_SQ_SUZE = 2000
-
-var (
-	BRUSH_SIZE      float32 = 10
+const (
+	DEBUG           bool    = false // TODO: compile flag for this
+	CANVAS_SQ_SIZE  int     = 2000
 	MIN_BRUSH_SIZE  float32 = 4
 	MAX_BRUSH_SIZE  float32 = 100
 	BRUSH_INCREMENT float32 = 5
@@ -28,6 +26,7 @@ type Game struct {
 
 	stateStack *StateStack
 
+	brushSize  float32
 	brushColor color.Color
 
 	mouseDragAnchor image.Point
@@ -43,9 +42,10 @@ type Game struct {
 
 func NewGame() *Game {
 	g := &Game{
-		mainCanvas:   ebiten.NewImage(CANVAS_SQ_SUZE, CANVAS_SQ_SUZE),
+		mainCanvas:   ebiten.NewImage(CANVAS_SQ_SIZE, CANVAS_SQ_SIZE),
 		brushColor:   color.White,
 		lastTickTime: time.Now(),
+		brushSize:    10,
 	}
 	g.mainCanvas.Fill(color.Black)
 	g.stateStack = &StateStack{}
@@ -65,10 +65,10 @@ func (g *Game) cursorPositionF() (float32, float32) {
 func (g *Game) handleMouseWheel() {
 	_, dy := ebiten.Wheel()
 	if dy > 0.1 {
-		BRUSH_SIZE = min(BRUSH_SIZE+BRUSH_INCREMENT, MAX_BRUSH_SIZE)
+		g.brushSize = min(g.brushSize+BRUSH_INCREMENT, MAX_BRUSH_SIZE)
 	}
 	if dy < -0.1 {
-		BRUSH_SIZE = max(BRUSH_SIZE-BRUSH_INCREMENT, MIN_BRUSH_SIZE)
+		g.brushSize = max(g.brushSize-BRUSH_INCREMENT, MIN_BRUSH_SIZE)
 	}
 }
 
@@ -153,7 +153,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 				g.mainCanvas,
 				x+float32(offset.X),
 				y+float32(offset.Y),
-				BRUSH_SIZE/2,
+				g.brushSize/2,
 				g.brushColor,
 				true,
 			)
@@ -164,7 +164,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 				g.previousY+float32(offset.Y),
 				x+float32(offset.X),
 				y+float32(offset.Y),
-				BRUSH_SIZE,
+				g.brushSize,
 				g.brushColor,
 				true,
 			)
@@ -180,8 +180,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	})
 
 	// cursor
-	vector.StrokeCircle(screen, x, y, BRUSH_SIZE/2+1, 3, color.Black, true)
-	vector.StrokeCircle(screen, x, y, BRUSH_SIZE/2+1, 2, color.White, true)
+	vector.StrokeCircle(screen, x, y, g.brushSize/2+1, 3, color.Black, true)
+	vector.StrokeCircle(screen, x, y, g.brushSize/2+1, 2, color.White, true)
 
 	if DEBUG {
 		debug(screen)
