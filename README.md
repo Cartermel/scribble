@@ -1,4 +1,4 @@
-<img src=".github/scribble.webp" height="100">
+<img src=".github/scribble.webp" alt="scribble" height="100">
 <p>a lightweight app for scribbling unimportant drawings quickly</p>
 
 ## Building / Running
