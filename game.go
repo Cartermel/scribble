@@ -77,7 +77,7 @@ func (g *Game) handleMouseWheel() {
 func (g *Game) DeltaTime() time.Duration {
 	deltaTime := time.Since(g.lastTickTime)
 	g.lastTickTime = time.Now()
-	return deltaTime
+	return deltaTime // TODO: use this for holding keybinds (like holding ctrl z)
 }
 
 func (g *Game) Update() error {
@@ -93,9 +93,6 @@ func (g *Game) Update() error {
 			g.previousX, g.previousY = g.cursorPositionF()
 		}
 
-		// if we're currently drawing, refresh the drawing state and return
-		// otherwise give a tick to the below keyboard handlers
-		// set drawing state, any code below this point cannot run if drawing
 		g.isDrawing = ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
 	}
 

@@ -50,6 +50,7 @@ var (
 // registry of all possible keybinds
 var keyBindMap = map[Keybind][]ebiten.Key{
 	// TODO: agnostic keys? im hard coding for left ctrl / shift because its exactly what ebiten returns
+	// what if the user wants to use right ctrl?
 	KeybindUndo: []ebiten.Key{ebiten.KeyZ, ebiten.KeyControlLeft, ebiten.KeyControl},
 	KeybindRedo: []ebiten.Key{ebiten.KeyZ, ebiten.KeyControlLeft, ebiten.KeyShiftLeft, ebiten.KeyControl, ebiten.KeyShift},
 	KeybindDrag: []ebiten.Key{ebiten.KeySpace},

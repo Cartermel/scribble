@@ -23,12 +23,10 @@ func init() {
 	for i := range pix {
 		pix[i] = 0xff
 	}
-	// This is hacky, but WritePixels is better than Fill in term of automatic texture packing.
 	whiteImage.WritePixels(pix)
 }
 
-// StrokeLine strokes a line (x0, y0)-(x1, y1) with the specified width and color.
-// clr has be to be a solid (non-transparent) color.
+// cloned from ebiten's `vector.StrokeLine` but with our own custom options because they dont allow them as a param
 func StrokeLine(dst *ebiten.Image, x0, y0, x1, y1 float32, strokeWidth float32, clr color.Color, antialias bool) {
 	var path vector.Path
 	path.MoveTo(x0, y0)
