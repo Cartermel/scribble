@@ -1,8 +1,5 @@
-<h1 align="center">scribble</h1>
-
-<p align="center">a lightweight app for scribbling unimportant drawings quickly</p>
-<br/>
-<br/>
+<img src=".github/scribble.webp" height="100">
+<p>a lightweight app for scribbling unimportant drawings quickly</p>
 
 ## Building / Running
 
